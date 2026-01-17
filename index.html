@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Sistem Kasir Bakery</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+body { background:#f6f7fb; }
+.product-card { 
+  height: 100%;
+  cursor: pointer;
+  transition:all 0.25s ease;  }
+.product-card:hover {
+ transform:translateY(-6px);
+ box-shadow: 0 10px 25px rgba(0, 0, 0, 1.5);  }
+.product-card:active {
+  transform: scale(0.97);
+}
+.badge-kategori { font-size:11px; }
+.total { font-size:22px; font-weight:bold; color: bold; }
+.brand-cafe{ font-family: 'Pacifico', cursive;}
+.kasir{
+  position: sticky;
+  top: 80px; }
+.kasir-body {
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;}
+.card-img-top{
+  height:120px;
+  object-fit:cover;}
+.container-fluid{
+  padding-left: 20px;
+  padding-right: 20px;}
+.btn-kategori {
+  border-radius: 20px;
+  transition: 0.2s;}
+.btn-kategori:hover {
+  transform: scale(1.05);}
+.btn-kategori:active {
+  box-shadow: 0 4px 10px rgba(255,193,7,0.5);
+  transform: translateY(-2px); }
+.btn-kategori.active,
+.btn-kategori.active:hover,
+.btn-kategori.active:focus {
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+  color: #000 !important;
+}
+
+.btn-kategori:not(.active):hover{
+  background-color: #ffc107;
+  color: #000;
+}
+
+
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<nav class="navbar navbar-dark bg-warning px-3">
+  <span class="navbar-brand brand-cafe">Calla Bakery</span>
+  <span class="badge bg-dark text-light" id="itemCount">0  Item</span>
+</nav> 
+
+<div class="container-fluid mt-3">
+<div class="row align-items-start">
+<div class="row">
+   <div class="mb-3 text-center">
+    <button class="btn btn-outline-warning btn-sm btn-kategori active" onclick="filterProduk('all', this)">All</button>
+    <button class="btn btn-outline-warning btn-sm btn-kategori " onclick="filterProduk('Bread', this)">Bread</button>
+    <button class="btn btn-outline-warning btn-sm btn-kategori " onclick="filterProduk('Cake', this)">Cake</button>
+    <button class="btn btn-outline-warning btn-sm btn-kategori " onclick="filterProduk('Pastry', this)">Pastry</button>
+  </div>
+</div>
+
+<!-- PRODUK -->
+<div class="col-lg-8">
+  <div class="row row-cols-lg-4 row-cols-md-3 row-cols-2 g-3" id="produkList"></div>
+</div>
+
+<!-- KASIR -->
+<div class="col-lg-4">
+  <div class="card shadow-sm kasir">
+    <div class="card-body kasir-body">
+      <h5>Data Pesanan</h5>
+      <input type="text" class="form-control mb-2" id="namaPelanggan" placeholder="Nama Pelanggan">
+
+      <ul class="list-group mb-2" id="keranjang"></ul>
+
+      <p>Subtotal: <span id="subtotal">Rp 0</span></p>
+      <p>Diskon: <span id="diskon">Rp 0</span></p>
+      <p class="total">TOTAL: <span id="total">Rp 0</span></p>
+
+      <input type="number" class="form-control mb-2" id="bayar" placeholder="Nominal Bayar">
+      <p>Kembalian: <b id="kembalian">Rp 0</b></p>
+
+      <button class="btn btn-success w-100 mb-2" onclick="cetakStruk()">Bayar & Cetak Struk</button>
+      <button class="btn btn-secondary w-100" onclick="reset()">Reset Transaksi</button>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+</div>
+
+<script>
+const produk = [
+  {nama:'Floss Roll Abon Sapi', harga:10000, kategori:'Bread', img:'img/roti1.jpg'},
+  {nama:'Garlic Butter Salt', harga:13000, kategori:'Bread', img:'img/roti2.jpg'},
+  {nama:'Paris Baguette', harga:10000, kategori:'Bread', img:'img/roti3.jpg'},
+  {nama:'Almond Cips Bread', harga:15000, kategori:'Bread', img:'img/roti4.jpg'},
+  {nama:'Sausage Bread', harga:10000, kategori:'Bread', img:'img/roti6.jpg'},
+  {nama:'Korean Cream Cheese', harga:15000, kategori:'Bread', img:'img/roti7.jpg'},
+  {nama:'Cinnamon Roll', harga:12000, kategori:'Bread', img:'img/roti8.jpg'},
+  {nama:'Italian Cream Bun', harga:13000, kategori:'Bread', img:'img/roti9.jpg'},
+
+  {nama:'Opera Cake', harga:35000, kategori:'Cake', img:'img/cake1.jpg'},
+  {nama:'Lotus Biscoff Cheesecake', harga:32000, kategori:'Cake', img:'img/cake2.jpg'},
+  {nama:'Strawberry Chocolate Cake', harga:35000, kategori:'Cake', img:'img/cake3.jpg'},
+  {nama:'Red Velvet Strawberry Cheesecake', harga:32000, kategori:'Cake', img:'img/cake4.jpg'},
+  {nama:'Basque Cheesecake', harga:30000, kategori:'Cake', img:'img/cake5.jpg'},
+  {nama:'Pecan Caramel Rum Cake', harga:40000, kategori:'Cake', img:'img/cake6.jpg'},
+  {nama:'Strawberry Tiramisu', harga:32000, kategori:'Cake', img:'img/cake7.jpg'},
+  {nama:'Tiramisu', harga:30000, kategori:'Cake', img:'img/cake8.jpg'},
+
+  {nama:'Eclairs Cream Filling', harga:18000, kategori:'Pastry', img:'img/pastry1.jpg'},
+  {nama:'Cream Puffs', harga:12000, kategori:'Pastry', img:'img/pastry2.jpg'},
+  {nama:'Chocolate Croissants', harga:10000, kategori:'Pastry', img:'img/pastry3.jpg'},
+  {nama:'Classic French Profiteroles', harga:10000, kategori:'Pastry', img:'img/pastry4.jpg'},
+  {nama:'Blackberry Cream Cheese', harga:13000, kategori:'Pastry', img:'img/pastry5.jpg'},
+  {nama:'Fruit Tarts', harga:10000, kategori:'Pastry', img:'img/pastry6.jpg'},
+  {nama:'Ricotta Chocolate Chip', harga:15000, kategori:'Pastry', img:'img/pastry7.jpg'},
+  {nama:'Puff Pastry Nutella', harga:10000, kategori:'Pastry', img:'img/pastry8.jpg'},
+];
+
+
+let keranjang = [];
+
+function tampilProduk(data){
+  let html = '';
+  data.forEach(p => {
+    html += `
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card product-card h-100" onclick="tambah('${p.nama}',${p.harga})">
+        <img src="${p.img}" class="card-img-top" style="height:120px; object-fit:cover;">
+        <div class="card-body">
+          <span class="badge bg-warning badge-kategori">${p.kategori}</span>
+          <h6 class="mt-2">${p.nama}</h6>
+          <p class="text-success mb-0">Rp ${p.harga.toLocaleString()}</p>
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('produkList').innerHTML = html;
+}
+
+
+function filterProduk(kat, el){
+  document.querySelectorAll('.btn-kategori').forEach(btn => {
+    btn.classList.remove('btn-warning', 'active');
+    btn.classList.add('btn-outline-warning');
+  });
+
+if(el){
+  el.classList.remove('btn-outline-warning');
+  el.classList.add('btn-warning', 'active');
+}
+
+  if(kat === 'all'){
+    tampilProduk(produk);
+  } else
+  tampilProduk(produk.filter(p => p.kategori === kat));
+}
+
+
+function tambah(nama,harga){
+  let item = keranjang.find(k => k.nama === nama);
+
+  if(item){
+    item.qty +=1;
+  }else {
+    keranjang.push({
+      nama,
+      harga,
+      qty:1
+    });
+  }
+ 
+  renderKeranjang();
+}
+
+function renderKeranjang(){
+  let list = '';
+  let subtotal = 0;
+
+  keranjang.forEach((k, i)=>{
+    let totalItem = k.harga * k.qty;
+    subtotal += totalItem;
+
+    list += `
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        ${k.nama}<br>
+        <small class="text-muted">
+         ${k.qty} x Rp ${k.harga.toLocaleString()}
+         </small>
+      </div>
+      <div class ="text-end">
+      <div>Rp ${totalItem.toLocaleString()}</div>
+      <button class="btn btn-sm btn-danger mt-1" onclick="hapusItem(${i})">✕</button>
+      </div>
+    </li>`;
+  });
+
+  let diskon = subtotal >= 40000 ? subtotal * 0.1 : 0;
+  let total = subtotal - diskon;
+
+  document.getElementById('keranjang').innerHTML =
+    list || '<li class="list-group-item text-center text-muted">Keranjang kosong</li>';
+
+  document.getElementById('subtotal').innerText = 'Rp ' + subtotal.toLocaleString();
+  document.getElementById('diskon').innerText = 'Rp ' + diskon.toLocaleString();
+  document.getElementById('total').innerText = 'Rp ' + total.toLocaleString();
+
+  let bayar = document.getElementById('bayar').value || 0;
+  document.getElementById('kembalian').innerText =
+    'Rp ' + Math.max(bayar - total,0).toLocaleString();
+
+  updateItemCount();
+}
+
+function hapusItem(index){
+  if(keranjang[index].qty > 1){
+    keranjang[index].qty -= 1;
+  } else {
+    keranjang.splice(index, 1);
+  } 
+  renderKeranjang();
+}
+
+
+document.getElementById('bayar').addEventListener('input', renderKeranjang);
+
+function cetakStruk(){
+  if(keranjang.length === 0){
+    alert('Keranjang masih kosong');
+    return;
+  }
+
+  let nama = document.getElementById('namaPelanggan').value || 'Pelanggan';
+  let subtotal = 0;
+  let rows = '';
+
+  keranjang.forEach((k, i) => {
+    let totalItem = k.harga * k.qty;
+    subtotal += totalItem;
+
+    rows += `
+      <tr>
+        <td>${i+1}</td>
+        <td>
+        ${k.nama} <br>
+      <small>${k.qty} x Rp ${k.harga.toLocaleString()}</small>
+         </td>
+        <td style="text-align:right">Rp ${totalItem.toLocaleString()}</td>
+      </tr>`;
+  });
+
+  let diskon = subtotal >= 40000 ? subtotal * 0.1 : 0;
+  let total = subtotal - diskon;
+  let bayar = document.getElementById('bayar').value || 0;
+  let kembalian = bayar - total;
+
+  let struk = `
+<!DOCTYPE html>
+<html>
+<head>
+<title>Struk Pembayaran</title>
+<style>
+body{
+  font-family: monospace;
+  width:280px;
+}
+h2, p{
+  text-align:center;
+  margin:4px 0;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+td{
+  padding:4px 0;
+  font-size:13px;
+}
+.line{
+  border-top:1px dashed #000;
+  margin:6px 0;
+}
+.total{
+  font-weight:bold;
+}
+@media print{
+  button{display:none;}
+}
+</style>
+</head>
+
+<body>
+<h2>Calla Bakery</h2>
+<p>Jl.Imam Bonjol</p>
+<p>Nama : <b>${nama}</b></p>   
+<p>${new Date().toLocaleString()}</p>
+
+<div class="line"></div>
+
+<table>
+${rows}
+</table>
+
+<div class="line"></div>
+
+<table>
+<tr>
+  <td>Subtotal</td>
+  <td style="text-align:right">Rp ${subtotal.toLocaleString()}</td>
+</tr>
+<tr>
+  <td>Diskon</td>
+  <td style="text-align:right">Rp ${diskon.toLocaleString()}</td>
+</tr>
+<tr class="total">
+  <td>TOTAL</td>
+  <td style="text-align:right">Rp ${total.toLocaleString()}</td>
+</tr>
+<tr>
+  <td>Bayar</td>
+  <td style="text-align:right">Rp ${bayar.toLocaleString()}</td>
+</tr>
+<tr>
+  <td>Kembali</td>
+  <td style="text-align:right">Rp ${kembalian.toLocaleString()}</td>
+</tr>
+</table>
+
+<div class="line"></div>
+
+<p>Terima kasih 🙏</p>
+<p>Selamat Menikmati</p>
+
+<button onclick="window.print()">CETAK</button>
+</body>
+</html>
+`;
+
+  let w = window.open('', '', 'width=300,height=600');
+  w.document.write(struk);
+  w.document.close();
+}
+
+
+
+function reset(){
+  keranjang = [];
+  document.getElementById('bayar').value = '';
+  renderKeranjang();
+}
+
+function updateItemCount(){
+  let totalItem = keranjang.reduce((sum, item) => sum + item.qty, 0);
+  document.getElementById('itemCount').innerText = totalItem + 'Item';
+}
+
+tampilProduk(produk);
+</script>
+
+</body>
+</html>
